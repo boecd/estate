@@ -1,0 +1,19 @@
+Package: estate
+Type: Package
+Title: Real estate
+Author: Bo Werth <bo.werth@gmail.com>
+Maintainer: Bo Werth <bo.werth@gmail.com>
+Depends:
+    R (>= 2.10.0)
+Description: Provides a function to scrape information from pap.fr.
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyLoad: yes
+URL: http://spark.rstudio.com
+Authors@R: c(person(given="Bo", family="Werth",
+    email="bo.werth@gmail.com", role=c("aut", "cre")))
+Version: 0.1
+Date: 2013-09-26
+Collate:
+    'estate-package.R'
+    'getEstate.R'

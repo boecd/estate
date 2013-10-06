@@ -1,0 +1,162 @@
+###################################
+##  Loading File                 ##
+##                               ##
+##    Analyse Paris Real Estate  ##
+###################################
+
+## path <- '/home/z930/Dropbox/Analysis/Paris_real_estate/'
+
+library(XML)
+library(stringr)
+
+page <- 'http://www.pap.fr/annonce/'
+spec <- 'paris-75-g439-40-annonces-par-page'
+
+label <- rbind.data.frame(c('vente-appartements',NA),
+                          c('appartement-a-vendre',2),
+                          c('ventes-appartements',3),
+                          c('vente-appartement-particulier',4),
+                          c('immobilier-vente-appartement',5),
+                          c('appartement-en-vente',6),
+                          c('achat-vente-appartement',7),
+                          c('vente-d-appartement',8),
+                          c('ventes-appart',9),
+                          c('ventes-appartement-sans-agence',10),
+                          c('appartement-a-acheter',11),
+                          c('vente-appartement-entre-particuliers',12),
+                          c('vente-appartement-particuliers',13),
+                          c('particulier-vend-appartement',14),
+                          c('vendre-appartement',15),
+                          c('annonce-appartement',16),
+                          c('annonces-appartements',17),
+                          c('annonces-appartement-particulier',18),
+                          c('petite-annonce-appartement',19),
+                          c('recherche-appartement',20),
+                          c('recherche-appartement-a-vendre',21))
+
+##################
+hrefFun <- function(x){
+  xpathSApply(x,'./a',xmlAttrs)  
+}
+###################
+
+table.all <- NULL
+first <- 1
+last <- 21
+for (i in c(first:last)) {
+  print(i)
+## table.all <- NULL; for (i in c(1:60)) {
+  if (i == 1) {
+    theurl <- paste0(page,as.character(label[i,1]),'-',spec)
+  } else if (i > 1 & i < 22) {
+    theurl <- paste0(page,as.character(label[i,1]),'-',spec,'-',i)
+  } else {
+    theurl <- paste0(page,'vente-appartement','-',spec,'-',i)
+  }
+  ## read contents
+  table <- readHTMLTable(theurl, encoding = 'utf-8')
+  table <- table[[1]]
+  ## read hyperlinks
+  table2 <- readHTMLTable(theurl, elFun = hrefFun, stringsAsFactors = FALSE)
+  table2 <- table2[[1]]
+  ##  
+  row.all <- NULL
+  j = 4
+  ## j = 8
+  while (j < nrow(table)) {
+    if (is.na(table[j+1,2])) {
+      row <- cbind.data.frame(table[j,1], table[j,2], 'none', table[j+1,1], table2[j,1])
+    } else {
+      row <- cbind.data.frame(table[j,1], table[j,2], table[j+1,1], table[j+1,2], table2[j,1])
+    }
+    row[,1] <- gsub('studio', 'studio 1 pièce', row[,1], fixed = TRUE)
+    row[,4] <- gsub('\t', '', row[,4], fixed = TRUE)
+    row[,4] <- gsub('\n', '', row[,4], fixed = TRUE)
+    row[,4] <- gsub('\r', '', row[,4], fixed = TRUE)
+    names(row) <- c('title','price','photo','description','link')
+    row.all <- rbind(row.all, row)
+    ## if (i%in%c(1,3,20:last)) j = j + 4 else j = j + 3
+    if (i%in%c(1,2,3)) j = j + 4 else j = j + 3
+  }
+  row.all$page <- i
+  table.all <- rbind(table.all,row.all)
+}
+## View(table.all)
+
+data <- table.all[,!colnames(table.all)=='page']
+## on error: data <- table.all[1:740,]
+data <- data[!substr(data[,1], 1, 1)=='+',]
+data$link <- paste0('http://www.pap.fr', data$link)
+data$photo <- gsub('[^[:digit:]]','',data$photo)
+## extract information from title
+x <- strsplit(as.character(data[,1]), ' ', fixed = TRUE)
+## data[x.length>5,1]
+## x[x.length>5]
+## x.length[x.length<5]
+data$type <- sapply(x, '[[', 2)
+data$rooms <- sapply(x, '[[', 3)
+data$rooms <- gsub('[^[:digit:]]','',data$rooms)
+##
+data$size <- sapply(x, '[[', 4)
+data$size <- as.numeric(sub(' m²','',data$size))
+data$price <- sub(' €','',data$price)
+data$price <- as.numeric(gsub('\\.','',data$price)) * 10^(-3)
+## ratio
+data$price.per.sqm <- data$price / data$size
+
+## harmonize location
+for (i in 1:nrow(data)) {  
+  if(!is.na(x[[i]][6])) data$location[i] <- x[[i]][6] else data$location[i] <- NA
+}
+data$location <- sub('E', '', data$location)
+data$location <- sub('r', '', data$location)
+data$location <- sub('\\(75016\\)', '16', data$location)
+data$location <- sub('\\(75116\\)', '16', data$location)
+data$location <- as.numeric(data$location)
+#########################################
+## extract information from description #
+#########################################
+## location
+location2_start <- str_locate(data[,4], '2013')
+location2_stop <- str_locate(data[,4], '\\.')
+for (i in 1:nrow(data)) {  
+  data$location2_[i] <- substr(data[i,4], start = location2_start[i,2]+1, stop = location2_stop[i,1]-1)
+}
+## harmonize location2
+data$location2 <- gsub('[^[:digit:]]','',data$location2)
+data$location2 <- sub('75116','16',data$location2)
+data$location2[data$location2=='' | is.na(data$location2)] <- '75'
+data$location2 <- as.numeric(data$location2)
+## floor
+data$floor <- NA
+data$floor[is.na(data$floor)] <- str_extract(data[,4], 'au [0-9]e')
+data$floor[is.na(data$floor)] <- str_extract(data[,4], '[0-9]e étage')
+data$floor[is.na(data$floor)] <- str_extract(data[,4], 'dernier étage')
+data$floor <- gsub('dernier','99', data$floor)
+data$floor <- gsub('[^[:digit:]]','',data$floor)
+## elevator
+data$ascenseur <- TRUE
+data$ascenseur[str_detect(data[,4], ignore.case('sans ascenseur'))==TRUE | str_detect(data[,4], ignore.case('ascenseur'))==FALSE] <- FALSE
+## cellar
+data$cave <- FALSE
+data$cave[str_detect(data[,4], ignore.case('cave'))==TRUE] <- TRUE
+## renovated
+data$refait <- FALSE
+data$refait[str_detect(data[,4], ignore.case('refait'))==TRUE] <- TRUE
+data$refait[str_detect(data[,4], ignore.case('rénové'))==TRUE] <- TRUE
+## haussmannien
+data$haussmanien <- FALSE
+data$haussmanien[str_detect(data[,4], ignore.case('haussmanien'))==TRUE] <- TRUE
+## balcony
+data$balcon <- FALSE
+data$balcon[str_detect(data[,4], ignore.case('balcon'))==TRUE] <- TRUE
+## remove information
+data[,4] <- sub('Voir site perso','',data[,4])
+data[,4] <- sub("Agences s'abstenir",'',data[,4])
+data[,4] <- sub("Mise à jour le ",'',data[,4])
+data[,4] <- sub("Nouvelle du ",'',data[,4])
+data[,4] <- sub("2013",'',data[,4])
+data$metro <- sub('suite','',str_extract(data[,4], 'suite.+'))
+##
+data <- data[order(data$price.per.sqm),]
+write.csv(data, file = paste0(path, 'result_data/data_', format(Sys.time(), '%Y-%m-%d'), '.csv'), row.names = F)
