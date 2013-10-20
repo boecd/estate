@@ -19,14 +19,16 @@
 getEstate <- function(type="vente", pages=50)
   {
     ##
-    hrefFun <- function(x){
-      xpathSApply(x,"./a",xmlAttrs)  
-    }
+    hrefFun <- function(x)
+      {
+        xpathSApply(x,"./a",xmlAttrs)  
+      }
     ##
     require(XML)
     require(stringr)
     page <- "http://www.pap.fr/annonce/"
     spec <- "paris-75-g439-40-annonces-par-page"
+
     if (type=="vente")
       {
         label <- rbind.data.frame(c("vente-appartements",NA),
@@ -52,62 +54,91 @@ getEstate <- function(type="vente", pages=50)
                                   c("recherche-appartement-a-vendre",21))
         label.fix <- "vente-appartement"
       }
-
+    
+    if (type=="location")
+      {
+        label <- rbind.data.frame(c("locations-appartement",NA),
+                                  c("locations-appartement",2),
+                                  c("locations-appartement-particulier",3),
+                                  c("immobilier-location-appartement",4),
+                                  c("locations-d-appartement",5),
+                                  c("location-appart",6),
+                                  c("offre-location-appartement",7),
+                                  c("appartement-a-louer",8),
+                                  c("appartement-en-location",9),
+                                  c("recherche-location-appartement",10),
+                                  c("annonce-location-appartement",11),
+                                  c("annonces-location-appartement",12),
+                                  c("locations-appartement-entre-particuliers",13),
+                                  c("location-appartements-sans-agence",14),
+                                  c("location-appart-particulier",15),
+                                  c("appart-a-louer",16),
+                                  c("recherche-appartement-louer",17),
+                                  c("appartement-a-louer-particulier",18),
+                                  c("offres-location-appartement",19),
+                                  c("location-appartement",20),
+                                  c("location-appartement",21))
+        label.fix <- "location-appartement"
+      }
+    
     table.all <- NULL
-    ## pages <- 50
     cat("\n preparing data...\n\n")
-    for (i in c(1:pages)) {
-      cat(paste0("   loading page ", i, " of ", pages, "\n"))
-      ## table.all <- NULL; for (i in c(1:60)) {
-      if (i == 1) {
-        theurl <- paste0(page,as.character(label[i,1]), "-", spec)
-      } else if (i > 1 & i < 22) {
-        theurl <- paste0(page,as.character(label[i,1]), "-", spec, "-", i)
-      } else {
-        theurl <- paste0(page, label.fix, "-", spec, "-", i)
+    for (i in c(1:pages))
+      {
+        cat(paste0("   loading page ", i, " of ", pages, "\n"))
+        if (i == 1)
+          {
+            theurl <- paste0(page,as.character(label[i,1]), "-", spec)
+          } else if (i > 1 & i < 22)
+            {
+              theurl <- paste0(page,as.character(label[i,1]), "-", spec, "-", i)
+            } else
+              {
+                theurl <- paste0(page, label.fix, "-", spec, "-", i)
+              }
+        ## read contents
+        table <- readHTMLTable(theurl, encoding = "utf-8")
+        table <- table[[1]]
+        ## read hyperlinks
+        table2 <- readHTMLTable(theurl, elFun = hrefFun, stringsAsFactors = FALSE)
+        table2 <- table2[[1]]
+        
+        row.all <- NULL
+        for (j in c(1:nrow(table)))
+          {
+            if (is.na(table[j+1,2]))
+              {
+                row <- cbind.data.frame(table[j,1], table[j,2], "none", table[j+1,1], table2[j,1])
+              } else {
+                row <- cbind.data.frame(table[j,1], table[j,2], table[j+1,1], table[j+1,2], table2[j,1])
+              }
+            row[,1] <- gsub("studio", "studio 1 pièce", row[,1], fixed = TRUE)
+            row[,4] <- gsub("\t", "", row[,4], fixed = TRUE)
+            row[,4] <- gsub("\n", "", row[,4], fixed = TRUE)
+            row[,4] <- gsub("\r", "", row[,4], fixed = TRUE)
+            names(row) <- c("title","price","photo","description","link")
+            row.all <- rbind(row.all, row)
+          }
+        row.all <- row.all[!is.na(str_locate(tolower(row.all[,1]), type)),]
+        row.all <- row.all[!is.na(row.all$title),]
+        row.all <- row.all[!is.na(row.all$price),]
+        ## row.all$page <- i
+        table.all <- rbind(table.all,row.all)
       }
-      ## read contents
-      table <- readHTMLTable(theurl, encoding = "utf-8")
-      table <- table[[1]]
-      ## read hyperlinks
-      table2 <- readHTMLTable(theurl, elFun = hrefFun, stringsAsFactors = FALSE)
-      table2 <- table2[[1]]
-
-      row.all <- NULL
-      j = 4
-      while (j < nrow(table)) {
-        if (is.na(table[j+1,2])) {
-          row <- cbind.data.frame(table[j,1], table[j,2], "none", table[j+1,1], table2[j,1])
-        } else {
-          row <- cbind.data.frame(table[j,1], table[j,2], table[j+1,1], table[j+1,2], table2[j,1])
-        }
-        row[,1] <- gsub("studio", "studio 1 pièce", row[,1], fixed = TRUE)
-        row[,4] <- gsub("\t", "", row[,4], fixed = TRUE)
-        row[,4] <- gsub("\n", "", row[,4], fixed = TRUE)
-        row[,4] <- gsub("\r", "", row[,4], fixed = TRUE)
-        names(row) <- c("title","price","photo","description","link")
-        row.all <- rbind(row.all, row)
-        ## if (i%in%c(1,3,20:last)) j = j + 4 else j = j + 3
-        if (i%in%c(1,2,3,4)) j = j + 4 else j = j + 3
-      }
-      row.all$page <- i
-      table.all <- rbind(table.all,row.all)
-    }
+    ## View(table.all)
+    ## View(table)
+    ## View(row.all)
     
     cat("\n Done! Use plotEstate to visualize\n")
-    ##
-    ## View(table.all)
     data <- table.all[,!colnames(table.all)=="page"]
-    ## on error: data <- table.all[1:740,]
     data <- data[!substr(data[,1], 1, 1)=="+",]
+
+    data$type <- type
     data$link <- paste0("http://www.pap.fr", data$link)
     data$photo <- gsub("[^[:digit:]]","",data$photo)
     ## extract information from title
     x <- strsplit(as.character(data[,1]), " ", fixed = TRUE)
-    ## data[x.length>5,1]
-    ## x[x.length>5]
-    ## x.length[x.length<5]
-    data$type <- sapply(x, "[[", 2)
+    ## data$type <- sapply(x, "[[", 2)
     data$rooms <- sapply(x, "[[", 3)
     data$rooms <- gsub("[^[:digit:]]","",data$rooms)
     ##
@@ -116,7 +147,7 @@ getEstate <- function(type="vente", pages=50)
     data$price <- sub(" €","",data$price)
     data$price <- as.numeric(gsub("\\.","",data$price)) * 10^(-3)
     ## ratio
-    data$price.per.sqm <- data$price / data$size
+    data$price_per_sqm <- data$price / data$size
     ## harmonize location
     for (i in 1:nrow(data)) {  
       if(!is.na(x[[i]][6])) data$location[i] <- x[[i]][6] else data$location[i] <- NA
@@ -129,7 +160,7 @@ getEstate <- function(type="vente", pages=50)
 
     ## extract information from description #
     ## location
-    location2_start <- str_locate(data[,4], "2013")
+    location2_start <- str_locate(data[,4], format(Sys.time(), "%Y"))
     location2_stop <- str_locate(data[,4], "\\.")
     for (i in 1:nrow(data)) {  
       data$location2_[i] <- substr(data[i,4], start = location2_start[i,2]+1, stop = location2_stop[i,1]-1)
@@ -162,15 +193,24 @@ getEstate <- function(type="vente", pages=50)
     ## balcony
     data$balcon <- FALSE
     data$balcon[str_detect(data[,4], ignore.case("balcon"))==TRUE] <- TRUE
+
     ## remove information
     data[,4] <- sub("Voir site perso","",data[,4])
     data[,4] <- sub("Agences s'abstenir","",data[,4])
     data[,4] <- sub("Mise à jour le ","",data[,4])
     data[,4] <- sub("Nouvelle du ","",data[,4])
-    data[,4] <- sub("2013","",data[,4])
+
+    x <- strsplit(data[,4], split = " ")
+head(x)
+    french.months <- c('janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre')
+    data$date <- paste0(substr(sapply(x, '[[', 4), 1, 4), '-', sprintf(match(sapply(x, '[[', 3), french.months), fmt = "%02d"), '-', sapply(x, '[[', 2))
+    data$date <- as.Date(data$date)
+
+    data[,4] <- sub(format(Sys.time(), "%Y"),"",data[,4])
+    
     data$metro <- sub("suite","",str_extract(data[,4], "suite.+"))
     ##
-    data <- data[order(data$price.per.sqm),]
+    data <- data[order(data$price_per_sqm),]
     ##
     return(data)
   }

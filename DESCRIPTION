@@ -13,7 +13,7 @@ URL: http://spark.rstudio.com
 Authors@R: c(person(given="Bo", family="Werth",
     email="bo.werth@gmail.com", role=c("aut", "cre")))
 Version: 0.1
-Date: 2013-09-26
+Date: 2013-10-20
 Collate:
     'estate-package.R'
     'getEstate.R'
