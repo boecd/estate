@@ -145,7 +145,8 @@ getEstate <- function(type="vente", pages=50)
     data$size <- sapply(x, "[[", 4)
     data$size <- as.numeric(sub(" m²","",data$size))
     data$price <- sub(" €","",data$price)
-    data$price <- as.numeric(gsub("\\.","",data$price)) * 10^(-3)
+    data$price <- as.numeric(gsub("\\.","",data$price))
+    if (type == "vente") data$price <- data$price * 10^(-3)
     ## ratio
     data$price_per_sqm <- data$price / data$size
     ## harmonize location
