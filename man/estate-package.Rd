@@ -8,7 +8,7 @@
 }
 \details{
   \tabular{ll}{ Package: \tab estate\cr Type: \tab
-  Package\cr Version: \tab 0.1\cr Date: \tab 2013-10-21\cr
+  Package\cr Version: \tab 0.1\cr Date: \tab 2014-02-15\cr
   Depends: \tab R (>= 2.10.0)\cr Encoding: \tab UTF-8\cr
   License: \tab GPL (>= 3)\cr LazyLoad: \tab yes\cr URL:
   \tab http://spark.rstudio.com\cr }

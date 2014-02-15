@@ -129,13 +129,20 @@ getEstate <- function(type="vente", pages=50)
     ## View(table)
     ## View(row.all)
     
-    cat("\n Done! Use plotEstate to visualize\n")
+    cat("\n Done!\n")
     data <- table.all[,!colnames(table.all)=="page"]
     data <- data[!substr(data[,1], 1, 1)=="+",]
-
+    
     data$type <- type
     data$link <- paste0("http://www.pap.fr", data$link)
     data$photo <- gsub("[^[:digit:]]","",data$photo)
+
+    ## if (type=="location")
+    ##   {
+        data$meublee <- FALSE
+        data$meublee[str_detect(data[,1], ignore.case("meublée"))==TRUE] <- TRUE
+        ## data[,1] <- sub("meublée ", "", data[,1])
+      ## }
     ## extract information from title
     x <- strsplit(as.character(data[,1]), " ", fixed = TRUE)
     ## data$type <- sapply(x, "[[", 2)
@@ -202,11 +209,13 @@ getEstate <- function(type="vente", pages=50)
     data[,4] <- sub("Nouvelle du ","",data[,4])
 
     x <- strsplit(data[,4], split = " ")
-head(x)
-    french.months <- c('janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre')
-    data$date <- paste0(substr(sapply(x, '[[', 4), 1, 4), '-', sprintf(match(sapply(x, '[[', 3), french.months), fmt = "%02d"), '-', sapply(x, '[[', 2))
-    data$date <- as.Date(data$date)
 
+    french.months <- c('janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre')
+    ## data$date <- paste0(substr(sapply(x, '[[', 4), 1, 4), '-', sprintf(match(sapply(x, '[[', 3), french.months), fmt = "%02d"), '-', sapply(x, '[[', 2))
+    data$date <- paste0(substr(sapply(x, '[[', 3), 1, 4), '-', sprintf(match(sapply(x, '[[', 2), french.months), fmt = "%02d"), '-', sapply(x, '[[', 1))
+    data <- data[!substr(data$title, 1, 7)=="Accueil",]
+    data$date <- as.Date(data$date)
+    
     data[,4] <- sub(format(Sys.time(), "%Y"),"",data[,4])
     
     data$metro <- sub("suite","",str_extract(data[,4], "suite.+"))
