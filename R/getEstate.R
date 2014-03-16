@@ -21,7 +21,7 @@ getEstate <- function(type="vente", pages=50)
     ##
     hrefFun <- function(x)
       {
-        xpathSApply(x,"./a",xmlAttrs)  
+        xpathSApply(x,"./a",xmlAttrs)
       }
     ##
     require(XML)
@@ -102,9 +102,14 @@ getEstate <- function(type="vente", pages=50)
         ## read hyperlinks
         table2 <- readHTMLTable(theurl, elFun = hrefFun, stringsAsFactors = FALSE)
         table2 <- table2[[1]]
-        
+
+        ## View(table2)
+        ## table2[10:15,]
+        ## View(table)
+
+        ## j <- 4
         row.all <- NULL
-        for (j in c(1:nrow(table)))
+        for (j in c(2:nrow(table)))
           {
             if (is.na(table[j+1,2]))
               {
@@ -132,17 +137,18 @@ getEstate <- function(type="vente", pages=50)
     cat("\n Done!\n")
     data <- table.all[,!colnames(table.all)=="page"]
     data <- data[!substr(data[,1], 1, 1)=="+",]
-    
+
     data$type <- type
     data$link <- paste0("http://www.pap.fr", data$link)
     data$photo <- gsub("[^[:digit:]]","",data$photo)
 
-    ## if (type=="location")
-    ##   {
-        data$meublee <- FALSE
-        data$meublee[str_detect(data[,1], ignore.case("meublée"))==TRUE] <- TRUE
-        ## data[,1] <- sub("meublée ", "", data[,1])
-      ## }
+    ## meublee and chambre in title
+    data <- data[str_detect(data[,1], ignore.case("chambre"))==FALSE,]
+    ##
+    data$furnished <- FALSE
+    data$furnished[str_detect(data[,1], ignore.case("meublée"))==TRUE] <- TRUE
+    data[,1] <- sub("meublée ", "", data[,1])
+
     ## extract information from title
     x <- strsplit(as.character(data[,1]), " ", fixed = TRUE)
     ## data$type <- sapply(x, "[[", 2)
@@ -220,6 +226,7 @@ getEstate <- function(type="vente", pages=50)
     
     data$metro <- sub("suite","",str_extract(data[,4], "suite.+"))
     ##
+    data <- data[!is.na(data$price_per_sqm),]
     data <- data[order(data$price_per_sqm),]
     ##
     return(data)
