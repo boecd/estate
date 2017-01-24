@@ -14,6 +14,4 @@ Authors@R: c(person(given="Bo", family="Werth",
     email="bo.werth@gmail.com", role=c("aut", "cre")))
 Version: 0.1
 Date: 2014-04-06
-Collate:
-    'estate-package.R'
-    'getEstate.R'
+Suggests: testthat
