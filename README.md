@@ -1,3 +1,5 @@
+![travis](https://travis-ci.org/bowerth/estate.svg?branch=master)
+
 # estate
 
 ## Test
