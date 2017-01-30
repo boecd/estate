@@ -156,14 +156,14 @@ knitr::<span class="kw">kable</span>(estate_table[<span class="dv">1</span>:nobs
 <div id="pooled-download-html-files" class="section level2">
 <h2 class="hasAnchor">
 <html><body><a href="#pooled-download-html-files" class="anchor"> </a></body></html>Pooled download HTML files</h2>
-<p>In order to achieve good download performance, the <code>curl</code> package is used. This package is designed to make parallel calls to the same host. This way, we can retrieve the maximum number of 50 HTML pages efficiently. The download location “../inst/extdata/vente” assumes you have extracted the package source and attempt to build the vignette using <code>devtools::build_vignettes()</code>.</p>
+<p>In order to achieve good download performance, the <code>curl</code> package is used. This package is designed to make parallel calls to the same host. This way, we can retrieve the maximum number of 50 HTML pages efficiently. The download location “../inst/extdata/vente” assumes you have extracted the package source and attempt to build the vignette using <code>devtools::build_vignettes()</code>. Create the subfolder “vente” in case it does not exist. In order to make the files visible to the <code>system.file</code> function, a re-install is required <code>devtools::install()</code>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## type &lt;- "vente"
 type &lt;-<span class="st"> "location"</span>
 htmldir &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">"extdata"</span>, type, <span class="dt">package =</span> <span class="st">"estate"</span>)
 npages &lt;-<span class="st"> </span><span class="dv">50</span></code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## set eval=TRUE to activate download
 <span class="kw">unlink</span>(<span class="kw">file.path</span>(htmldir, <span class="kw">list.files</span>(htmldir)))
-<span class="kw">downloadHtml</span>(<span class="dt">type =</span> type, <span class="dt">pages =</span> <span class="kw">c</span>(<span class="dv">1</span>:npages), <span class="dt">htmldir =</span> htmldir)</code></pre></div>
+<span class="kw">downloadHtml</span>(<span class="dt">type =</span> type, <span class="dt">pages =</span> <span class="kw">c</span>(<span class="dv">1</span>:npages), <span class="dt">htmldir =</span> <span class="kw">file.path</span>(<span class="st">"../inst/extdata"</span>, type))</code></pre></div>
 </div>
 <div id="vectorized-extraction-from-html" class="section level2">
 <h2 class="hasAnchor">

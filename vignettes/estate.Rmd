@@ -62,7 +62,7 @@ knitr::kable(estate_table[1:nobs, ])
 
 ## Pooled download HTML files
 
-In order to achieve good download performance, the `curl` package is used. This package is designed to make parallel calls to the same host. This way, we can retrieve the maximum number of 50 HTML pages efficiently. The download location "../inst/extdata/vente" assumes you have extracted the package source and attempt to build the vignette using `devtools::build_vignettes()`.
+In order to achieve good download performance, the `curl` package is used. This package is designed to make parallel calls to the same host. This way, we can retrieve the maximum number of 50 HTML pages efficiently. The download location "../inst/extdata/vente" assumes you have extracted the package source and attempt to build the vignette using `devtools::build_vignettes()`. Create the subfolder "vente" in case it does not exist. In order to make the files visible to the `system.file` function, a re-install is required `devtools::install()`.
 
 ```{r, eval=TRUE, echo=TRUE}
 ## type <- "vente"
@@ -74,7 +74,7 @@ npages <- 50
 ```{r, eval=FALSE, echo=TRUE}
 ## set eval=TRUE to activate download
 unlink(file.path(htmldir, list.files(htmldir)))
-downloadHtml(type = type, pages = c(1:npages), htmldir = htmldir)
+downloadHtml(type = type, pages = c(1:npages), htmldir = file.path("../inst/extdata", type))
 ```
 
 ## Vectorized extraction from HTML
