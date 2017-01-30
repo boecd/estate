@@ -1,0 +1,17 @@
+# Sample .travis.yml for R projects
+
+language: r
+warnings_are_errors: true
+sudo: required
+
+r_build_args: --no-build-vignettes --no-manual --no-resave-data
+r_check_args: --no-build-vignettes --no-manual
+
+env:
+ global:
+   - CRAN: http://cran.rstudio.com
+
+notifications:
+  email:
+    on_success: change
+    on_failure: change
