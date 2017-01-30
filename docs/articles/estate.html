@@ -153,9 +153,9 @@ knitr::<span class="kw">kable</span>(estate_table[<span class="dv">1</span>:nobs
 </tbody>
 </table>
 </div>
-<div id="download-html-files" class="section level2">
+<div id="pooled-download-html-files" class="section level2">
 <h2 class="hasAnchor">
-<html><body><a href="#download-html-files" class="anchor"> </a></body></html>Download HTML files</h2>
+<html><body><a href="#pooled-download-html-files" class="anchor"> </a></body></html>Pooled download HTML files</h2>
 <p>In order to achieve good download performance, the <code>curl</code> package is used. This package is designed to make parallel calls to the same host. This way, we can retrieve the maximum number of 50 HTML pages efficiently. The download location “../inst/extdata/vente” assumes you have extracted the package source and attempt to build the vignette using <code>devtools::build_vignettes()</code>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">## type &lt;- "vente"
 type &lt;-<span class="st"> "location"</span>
@@ -238,7 +238,7 @@ gg_interactive &lt;-
       <ul class="nav nav-pills nav-stacked">
 <li><a href="#create-urls">Create URLs</a></li>
       <li><a href="#extract-from-html-files">Extract from HTML files</a></li>
-      <li><a href="#download-html-files">Download HTML files</a></li>
+      <li><a href="#pooled-download-html-files">Pooled download HTML files</a></li>
       <li><a href="#vectorized-extraction-from-html">Vectorized extraction from HTML</a></li>
       </ul>
 </div>

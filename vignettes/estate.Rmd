@@ -60,7 +60,7 @@ estate_table <- extractList(url)
 knitr::kable(estate_table[1:nobs, ])
 ```
 
-## Download HTML files
+## Pooled download HTML files
 
 In order to achieve good download performance, the `curl` package is used. This package is designed to make parallel calls to the same host. This way, we can retrieve the maximum number of 50 HTML pages efficiently. The download location "../inst/extdata/vente" assumes you have extracted the package source and attempt to build the vignette using `devtools::build_vignettes()`.
 
