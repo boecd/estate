@@ -1,23 +1,24 @@
 ---
-title: "papfr"
-author: "rdata"
-date: "`r Sys.Date()`"
+author: "Bo Werth"
+title: "Introduction to estate"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{estate}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-## Usage
+The package at present scrapes and extracts information about real estate adds from a French website.
 
-### Loading the package
+After installation, the package can be attached in the regular way
 
 ```{r, echo=TRUE}
 library(estate)
 ```
 
-### Create URLs
+## Create URLs
+
+The website allows displaying at maximum 40 ads per page. The URLs of the first 21 pages are irregular:
 
 - `page = 1`: the page number does not appear at the end of the URL.
 - `page < 22`: variable component after "annonce/".
@@ -29,14 +30,9 @@ createUrl(page = 2, provider = "papfr", type = "vente")
 createUrl(page = 22, provider = "papfr", type = "vente")
 ```
 
-### Retrieve URLs to HTML
+## Extract from HTML files
 
-```{r, echo=TRUE, eval=FALSE}
-downloadHtml(type="vente", pages=c(1:50), destdir = "inst/extdata/vente")
-downloadHtml(type="location", pages=c(1:50), destdir = "inst/extdata/location")
-```
-
-### Extract from HTML files
+The various low-level extraction functions make use of the `XML` package to access nodes in the HTML page structure (elements like `<div>`, `<p>`).
 
 - URL for complete description
 - cover picture link
@@ -47,7 +43,7 @@ downloadHtml(type="location", pages=c(1:50), destdir = "inst/extdata/location")
 - date
 
 ```{r, echo=TRUE}
-url <- file.path("../inst/extdata", "papfr-40.html")
+url <- system.file("extdata", "papfr-40.html", package = "estate")
 doc <- XML::htmlParse(url, encoding = "utf-8")
 nobs <- 2
 estate:::extractLinkVignette(doc)[1:nobs]
@@ -64,37 +60,24 @@ estate_table <- extractList(url)
 knitr::kable(estate_table[1:nobs, ])
 ```
 
-### Co
+## Download HTML files
 
-### Download HTML files
+In order to achieve good download performance, the `curl` package is used. This package is designed to make parallel calls to the same host. This way, we can retrieve the maximum number of 50 HTML pages efficiently. The download location "../inst/extdata/vente" assumes you have extracted the package source and attempt to build the vignette using `devtools::build_vignettes()`.
 
 ```{r, eval=TRUE, echo=TRUE}
 ## type <- "vente"
 type <- "location"
-htmldir <- file.path("../inst/extdata", type)
+htmldir <- system.file("extdata", type, package = "estate")
 npages <- 50
 ```
 
 ```{r, eval=FALSE, echo=TRUE}
+## set eval=TRUE to activate download
 unlink(file.path(htmldir, list.files(htmldir)))
 downloadHtml(type = type, pages = c(1:npages), htmldir = htmldir)
 ```
 
-### Convert multiple HTML files
-
-
-```{r, eval=FALSE, echo=TRUE}
-htmldir <- "../inst/extdata/vente"
-htmlfiles <- list.files(htmldir)[1:nobs]
-list_vente <-
-  lapply(
-    file.path(htmldir, htmlfiles),
-    extractList)
-df_vente <- do.call("rbind", list_vente)
-nrow(df_vente)
-```
-
-Can do for both types when creating a function
+## Vectorized extraction from HTML
 
 ```{r, echo=TRUE}
 combineEstate <- function(type, htmldir, pages=1) {
