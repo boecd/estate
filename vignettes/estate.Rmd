@@ -1,0 +1,151 @@
+---
+title: "papfr"
+author: "rdata"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+## Usage
+
+### Loading the package
+
+```{r, echo=TRUE}
+library(estate)
+```
+
+### Create URLs
+
+- `page = 1`: the page number does not appear at the end of the URL.
+- `page < 22`: variable component after "annonce/".
+- `page > 1`: page number in URL.
+
+```{r, echo=TRUE}
+createUrl(page = 1, provider = "papfr", type = "vente")
+createUrl(page = 2, provider = "papfr", type = "vente")
+createUrl(page = 22, provider = "papfr", type = "vente")
+```
+
+### Retrieve URLs to HTML
+
+```{r, echo=TRUE, eval=FALSE}
+downloadHtml(type="vente", pages=c(1:50), destdir = "inst/extdata/vente")
+downloadHtml(type="location", pages=c(1:50), destdir = "inst/extdata/location")
+```
+
+### Extract from HTML files
+
+- URL for complete description
+- cover picture link
+- partial description
+- summary: number of rooms and bedrooms, surface in m2
+- price in Euros
+- zip code
+- date
+
+```{r, echo=TRUE}
+url <- file.path("../inst/extdata", "papfr-40.html")
+doc <- XML::htmlParse(url, encoding = "utf-8")
+nobs <- 2
+estate:::extractLinkVignette(doc)[1:nobs]
+estate:::extractLinkPhoto(doc)[1:nobs]
+(description <- estate:::extractDescription(doc)[1:nobs])
+estate:::extractCP(description)
+estate:::extractSummaryTable(doc)[1:nobs,]
+estate:::extractPrice(doc)[1:nobs]
+estate:::extractDate(doc)[1:nobs]
+```
+
+```{r, echo=TRUE, result='as.is'}
+estate_table <- extractList(url)
+knitr::kable(estate_table[1:nobs, ])
+```
+
+### Co
+
+### Download HTML files
+
+```{r, eval=TRUE, echo=TRUE}
+## type <- "vente"
+type <- "location"
+htmldir <- file.path("../inst/extdata", type)
+npages <- 50
+```
+
+```{r, eval=FALSE, echo=TRUE}
+unlink(file.path(htmldir, list.files(htmldir)))
+downloadHtml(type = type, pages = c(1:npages), htmldir = htmldir)
+```
+
+### Convert multiple HTML files
+
+
+```{r, eval=FALSE, echo=TRUE}
+htmldir <- "../inst/extdata/vente"
+htmlfiles <- list.files(htmldir)[1:nobs]
+list_vente <-
+  lapply(
+    file.path(htmldir, htmlfiles),
+    extractList)
+df_vente <- do.call("rbind", list_vente)
+nrow(df_vente)
+```
+
+Can do for both types when creating a function
+
+```{r, echo=TRUE}
+combineEstate <- function(type, htmldir, pages=1) {
+  htmlfiles <- list.files(htmldir)[1:pages]
+  estate_list <-
+    lapply(file.path(htmldir, htmlfiles), extractList)
+  estate_df <- do.call("rbind", estate_list)
+  return(estate_df)
+}
+
+estatedf <- combineEstate(type = type,
+                          htmldir = htmldir,
+                          pages = npages)
+
+if (type=="vente") {
+  price_min <-  3*10^5; price_max <- 5*10^5
+} else if (type=="location") {
+  price_min <-  9*10^2; price_max <- 16*10^2
+}
+estatedf <- subset(estatedf, price < price_max & price > price_min)
+nrow(estatedf)
+
+estatedf$price_per_sqm <- estatedf$price / estatedf$size
+
+intcols <- names(estatedf)[lapply(estatedf, class)%in%c("integer", "numeric")]
+summary(estatedf[,colnames(estatedf) %in% intcols])
+```
+
+```{r, echo=TRUE}
+library(ggplot2)
+library(ggiraph)
+
+# create an 'onclick' column
+estatedf$onclick <- sprintf("window.open(\"%s\")", estatedf$link)
+estatedf$tooltip <- sprintf("<img src=\"%s\"/>", estatedf$photo)
+
+gg_base <-
+  ggplot(estatedf, aes( x = price, y = size, color = factor(location)) ) +
+  ## scale_colour_hue(h = c(0, 90)) +
+  theme_minimal()
+
+gg_interactive <-
+  gg_base +
+  geom_point_interactive(aes(tooltip = tooltip, onclick = onclick), size = 2)
+
+ggiraph(code = print(gg_interactive), width = 1, width_svg = 7) #, zoom_max = 5)
+```
+
+```{r, eval=FALSE, echo=FALSE}
+gg_jitter <-
+  gg_base +
+  geom_point() + geom_jitter(height = 0.5, width = 500)
+gg_jitter
+```
