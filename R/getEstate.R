@@ -2,8 +2,8 @@
 #'
 #' Get real estate data
 #'
-#' This function scrapes data from \code{\link{pap.fr}} using the \code{XML} and
-#' the \code{stringr} package.
+#' This function scrapes data from pap.fr using the XML and
+#' the stringr package.
 #'
 #' @param type choose to scrape offers for rent or sale.
 #' @param pages select the number of pages, each of them containing
@@ -11,7 +11,7 @@
 #'
 #' @author Bo Werth
 #' @keywords scrape
-#' @seealso \code{www.pap.fr}
+#' @seealso www.pap.fr
 #' @export
 #' @examples
 #' data <- getEstate(type = "vente", pages = 50)
@@ -25,8 +25,8 @@ getEstate <- function(type="vente", pages=50)
       xpathSApply(x, "./a", xmlAttrs)
     }
 
-    require(XML)
-    require(stringr)
+    ## require(XML)
+    ## require(stringr)
     page <- "http://www.pap.fr/annonce/"
     spec <- "paris-75-g439-40-annonces-par-page"
 

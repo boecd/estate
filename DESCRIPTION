@@ -14,4 +14,15 @@ Authors@R: c(person(given="Bo", family="Werth",
     email="bo.werth@gmail.com", role=c("aut", "cre")))
 Version: 0.1
 Date: 2014-04-06
-Suggests: testthat
+Imports:
+    curl,
+    magrittr,
+    stringr,
+    yaml,
+    XML
+Suggests:
+    testthat,
+    knitr,
+    rmarkdown
+RoxygenNote: 5.0.1
+VignetteBuilder: knitr
