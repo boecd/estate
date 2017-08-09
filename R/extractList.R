@@ -151,7 +151,7 @@ dateClean <- function(character) {
   french_months <- c('janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre')
  date_string <-
     character %>%
-    stringr::str_extract(pattern = "[0-9]+[ ][a-z]+[ ][0-9]+$") %>%
+    stringr::str_extract(pattern = "[0-9]+[ ][a-zéû]+[ ][0-9]+$") %>%
     stringr::str_split(" ")
   day <- date_string %>% sapply("[[", 1)
   month <- date_string %>%
