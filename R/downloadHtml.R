@@ -1,13 +1,17 @@
 #' @importFrom magrittr %>%
 #' @export
 
-downloadHtml <- function(type="vente", pages=c(1:2), htmldir="inst/extdata/vente") {
+downloadHtml <- function(type="vente",
+                         pages=c(1:2),
+                         htmldir="inst/extdata/vente",
+                         provider="papfr") {
 
   stopifnot(type %in% c("vente", "location"))
   stopifnot(length(pages) > 0 && is.numeric(pages))
   stopifnot(dir.exists(htmldir))
 
-  curlpool <- createUrlPool(type = type, pages = pages)
+  curlpool <- createUrlPool(type = type, pages = pages,
+                            provider = provider)
   ## curldat <- list()
   htmldir <<- htmldir
   curl::multi_run(pool = curlpool)
@@ -19,10 +23,10 @@ downloadHtml <- function(type="vente", pages=c(1:2), htmldir="inst/extdata/vente
   return(msg)
 }
 
-createUrlPool <- function(type, pages) {
+createUrlPool <- function(type, pages, provider="papfr") {
   curlpool <-
     curl::new_pool(total_con = 20, host_con = 4, multiplex = TRUE)
-  urls <- sapply(pages, createUrl, type)
+  urls <- sapply(pages, createUrl, type = type, provider = provider)
   ## add urls to curlpool
   sapply(urls,
          curl::curl_fetch_multi,

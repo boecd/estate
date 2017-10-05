@@ -12,7 +12,7 @@ The package at present scrapes and extracts information about real estate adds f
 
 After installation, the package can be attached in the regular way
 
-```{r, echo=TRUE}
+```{r init, echo=TRUE}
 library(estate)
 ```
 
@@ -24,7 +24,7 @@ The website allows displaying at maximum 40 ads per page. The URLs of the first 
 - `page < 22`: variable component after "annonce/".
 - `page > 1`: page number in URL.
 
-```{r, echo=TRUE}
+```{r createUrl, echo=TRUE}
 createUrl(page = 1, provider = "papfr", type = "vente")
 createUrl(page = 2, provider = "papfr", type = "vente")
 createUrl(page = 22, provider = "papfr", type = "vente")
@@ -42,7 +42,7 @@ The various low-level extraction functions make use of the `XML` package to acce
 - zip code
 - date
 
-```{r, echo=TRUE}
+```{r extract, echo=TRUE}
 url <- system.file("extdata", "papfr-40.html", package = "estate")
 doc <- XML::htmlParse(url, encoding = "utf-8")
 nobs <- 2
@@ -55,7 +55,7 @@ estate:::extractPrice(doc)[1:nobs]
 estate:::extractDate(doc)[1:nobs]
 ```
 
-```{r, echo=TRUE, result='as.is'}
+```{r table_extract, echo=TRUE, result='as.is'}
 estate_table <- extractList(url)
 knitr::kable(estate_table[1:nobs, ])
 ```
@@ -64,22 +64,25 @@ knitr::kable(estate_table[1:nobs, ])
 
 In order to achieve good download performance, the `curl` package is used. This package is designed to make parallel calls to the same host. This way, we can retrieve the maximum number of 50 HTML pages efficiently. The download location "../inst/extdata/vente" assumes you have extracted the package source and attempt to build the vignette using `devtools::build_vignettes()`. Create the subfolder "vente" in case it does not exist. In order to make the files visible to the `system.file` function, a re-install is required `devtools::install()`.
 
-```{r, eval=TRUE, echo=TRUE}
-## type <- "vente"
-type <- "location"
+```{r config_dl, eval=TRUE, echo=TRUE}
+type <- "vente"
+## type <- "location"
 htmldir <- system.file("extdata", type, package = "estate")
 npages <- 50
 ```
 
-```{r, eval=FALSE, echo=TRUE}
+```{r downloadHtml, eval=TRUE, echo=TRUE}
 ## set eval=TRUE to activate download
-unlink(file.path(htmldir, list.files(htmldir)))
-downloadHtml(type = type, pages = c(1:npages), htmldir = file.path("../inst/extdata", type))
+## htmldir_temp <- file.path("../inst/extdata", type)
+htmldir_temp <- file.path("../../inst/extdata", type) # run from /docs/articles folder
+unlink(file.path(htmldir_temp, list.files(htmldir_temp)))
+downloadHtml(type = type, pages = c(1:npages), htmldir = htmldir_temp)
+devtools::install() # reads data from install dir
 ```
 
 ## Vectorized extraction from HTML
 
-```{r, echo=TRUE}
+```{r extract_combine, echo=TRUE}
 combineEstate <- function(type, htmldir, pages=1) {
   htmlfiles <- list.files(htmldir)[1:pages]
   estate_list <-
@@ -91,13 +94,23 @@ combineEstate <- function(type, htmldir, pages=1) {
 estatedf <- combineEstate(type = type,
                           htmldir = htmldir,
                           pages = npages)
+```
 
+```{r export_txt, eval=FALSE, echo=TRUE}
+datenow <- format(Sys.Date(), format = "%Y-%m-%d")
+## datenow <- "2017-01-30"
+exportfile <- file.path("/tmp", paste0(datenow, "-estate-", type, ".tsv"))
+write.table(x = estatedf, file = exportfile, row.names = FALSE, sep = "\t")
+```
+
+```{r subset, echo=TRUE}
 if (type=="vente") {
-  price_min <-  3*10^5; price_max <- 5*10^5
+  price_min <-  2*10^5; price_max <- 5*10^5
 } else if (type=="location") {
   price_min <-  9*10^2; price_max <- 16*10^2
 }
 estatedf <- subset(estatedf, price < price_max & price > price_min)
+## estatedf <- subset(estatedf, price < price_max & price > price_min & date > "2017-09-09")
 nrow(estatedf)
 
 estatedf$price_per_sqm <- estatedf$price / estatedf$size
@@ -106,7 +119,8 @@ intcols <- names(estatedf)[lapply(estatedf, class)%in%c("integer", "numeric")]
 summary(estatedf[,colnames(estatedf) %in% intcols])
 ```
 
-```{r, echo=TRUE}
+
+```{r plot, echo=TRUE}
 library(ggplot2)
 library(ggiraph)
 
@@ -121,12 +135,28 @@ gg_base <-
 
 gg_interactive <-
   gg_base +
+  ## geom_smooth(method = "lm") +
   geom_point_interactive(aes(tooltip = tooltip, onclick = onclick), size = 2)
 
 ggiraph(code = print(gg_interactive), width = 1, width_svg = 7) #, zoom_max = 5)
 ```
 
-```{r, eval=FALSE, echo=FALSE}
+```{r plot-smooth-test, echo=FALSE, eval=FALSE}
+dataset = iris
+dataset$tooltip = dataset$Species
+dataset$clickjs = paste0("alert(\"",dataset$Species, "\")" )
+
+                                        # plots
+gg_point = ggplot(dataset,
+                  aes(x = Sepal.Length, y = Petal.Width,
+                      color = Species, tooltip = tooltip,
+                      onclick = clickjs) ) +
+  geom_point_interactive()
+
+ggiraph(code = {print(gg_point)})
+```
+
+```{r jitter, eval=FALSE, echo=FALSE}
 gg_jitter <-
   gg_base +
   geom_point() + geom_jitter(height = 0.5, width = 500)

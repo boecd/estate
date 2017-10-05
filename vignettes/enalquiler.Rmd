@@ -1,0 +1,116 @@
+---
+author: "Bo Werth"
+title: "Enalquiler"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{estate}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r setup, echo=FALSE}
+library(RCurl)
+library(rvest)
+library(magrittr)
+library(curl)
+library(estate)
+
+htmldir <- "inst/extdata/enalquiler"
+```
+
+```{r download, echo=TRUE, eval=FALSE}
+## get number of offers
+num_per_page <- 15
+baseurl <- "http://www.enalquiler.com/search?provincia=43&poblacion=46424&tipo=2"
+tt <- getURL(baseurl)
+doc <- read_html(tt)
+
+property_num <-
+  doc %>% html_node(".property-list-title-count") %>% html_text() %>%
+  sub("[ a-z]+", "", .) %>%
+  gsub("[()]", "", .) %>%
+  as.integer()
+
+npages <- ceiling(property_num / num_per_page)
+
+estate::downloadHtml(pages = seq(1, npages),
+             htmldir = htmldir,
+             provider = "enalquiler")
+```
+
+```{r extract-fun, echo=FALSE}
+extractEnalquiler <- function(url) {
+
+  title <-
+    item %>% html_nodes(".property-title") %>% html_text() %>%
+    gsub("\n", "", .) %>%               # remove line breaks
+    sub("^[ ]+", "", .) %>%             # remove leading whitespace
+    sub("[ ]+$", "", .)                 # remove trailing  whitespace
+
+  link <-
+    item %>% html_nodes(".property-title") %>% html_attr("href")
+
+  price <-
+    item %>% html_nodes(".property-price") %>% html_text() %>%
+    gsub("\n", "", .) %>%               # remove line breaks
+    sub("[ ]+", "", .) %>%              # remove whitespace
+    sub("\u0080", "", .) %>%            # remove euro symbol
+    sub("[.]", "", .)                   # remove thousands seperator
+
+  size <-
+    item %>% html_nodes(".detail-m2") %>% html_text() %>%
+    gsub("\n", "", .) %>%               # remove line breaks
+    sub("^[ ]+", "", .) %>%             # remove leading whitespace
+    sub("m2", "", .)
+
+  bath <-
+    item %>% html_nodes(".detail-bathrooms") %>% html_text() %>%
+    gsub("\n", "", .) %>%               # remove line breaks
+    sub("^[ ]+", "", .) %>%             # remove leading whitespace
+    sub("[a-zA-Zñ]+", "", .) %>%        # remove "Baño(s)"
+    sub("[ ]+$", "", .)                 # remove trailing  whitespace
+
+  location <-
+    item %>% html_nodes(".property-location") %>% html_text() %>%
+    gsub("\n", "", .) %>%               # remove line breaks
+    sub("^[ ]+", "", .) %>%             # remove leading whitespace
+    sub("[ ]+$", "", .)                 # remove trailing  whitespace
+
+  list_out <-
+    list(title = title,
+         price = as.integer(price),
+         size = as.integer(size),
+         bath = as.integer(bath),
+         link = link)
+  return(list_out)
+}
+```
+
+```{r extract-apply, echo=FALSE, eval=TRUE}
+processEnalquiler <- function(url) {
+  ## doc <- XML::htmlParse(url, encoding = "utf-8")
+  doc <- xml2::read_html(url)
+  proplist <- doc %>% html_nodes(".property-list") %>% html_nodes(".property-item")
+  res_ls <- lapply(proplist, extractEnalquiler)
+  res_df <- do.call(rbind.data.frame, res_ls)
+  return(res_df)
+}
+## processEnalquiler("inst/extdata/enalquiler/file21d6ab837ba.html")
+```
+
+## Vectorized extraction from HTML
+
+```{r extract_combine, echo=TRUE, results='asis'}
+combineEstate <- function(htmldir, pages=1) {
+  htmlfiles <- list.files(htmldir)[1:pages]
+  estate_list <-
+    lapply(file.path(htmldir, htmlfiles), processEnalquiler)
+  estate_df <- do.call("rbind", estate_list)
+  return(estate_df)
+}
+estatedf <- combineEstate(htmldir = htmldir, pages = npages)
+knitr::kable(head(estatedf))
+nrow(estatedf)
+write.table(estatedf, file = "enalquiler-2017-10-04.tsv", row.names = FALSE, sep = "\t")
+```
