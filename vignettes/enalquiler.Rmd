@@ -40,7 +40,7 @@ estate::downloadHtml(pages = seq(1, npages),
 ```
 
 ```{r extract-fun, echo=FALSE}
-extractEnalquiler <- function(url) {
+extractEnalquiler <- function(item) {
 
   title <-
     item %>% html_nodes(".property-title") %>% html_text() %>%
@@ -78,10 +78,11 @@ extractEnalquiler <- function(url) {
     sub("[ ]+$", "", .)                 # remove trailing  whitespace
 
   list_out <-
-    list(title = title,
-         price = as.integer(price),
+    list(price = as.integer(price),
          size = as.integer(size),
          bath = as.integer(bath),
+         title = title,
+         location = location,
          link = link)
   return(list_out)
 }
@@ -101,16 +102,24 @@ processEnalquiler <- function(url) {
 
 ## Vectorized extraction from HTML
 
-```{r extract_combine, echo=TRUE, results='asis'}
+```{r extract_combine, echo=TRUE, eval=FALSE, results='asis'}
+library(doMC)
+registerDoMC(detectCores(logical = TRUE) - 1)
+
 combineEstate <- function(htmldir, pages=1) {
   htmlfiles <- list.files(htmldir)[1:pages]
+
+  ## foreach(cou = namecou) %dopar% splitSdmxRead(loc = cou, codelist = codelist, destdir = file.path(origdir, src_id))
+  ## estate_list <-
+  ##   lapply(file.path(htmldir, htmlfiles), processEnalquiler)
   estate_list <-
-    lapply(file.path(htmldir, htmlfiles), processEnalquiler)
+    foreach(file = file.path(htmldir, htmlfiles)) %dopar% processEnalquiler(url = file)
   estate_df <- do.call("rbind", estate_list)
   return(estate_df)
 }
+
 estatedf <- combineEstate(htmldir = htmldir, pages = npages)
 knitr::kable(head(estatedf))
-nrow(estatedf)
-write.table(estatedf, file = "enalquiler-2017-10-04.tsv", row.names = FALSE, sep = "\t")
+## head(estatedf)
+## write.table(estatedf, file = "enalquiler-2017-10-04.tsv", row.names = FALSE, sep = "\t")
 ```
