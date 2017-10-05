@@ -19,11 +19,7 @@ createUrl <- function(page=1, type="vente", provider="papfr") {
     )
     theurl <-
       paste0(part1, part2, "-", part3, part4)
-  } else {
-    theurl <- ""
-  }
-
-  if (provider=="enalquiler") {
+  } else if (provider=="enalquiler") {
     part1 <- providerConf[[provider]]$part1
     part2 <- providerConf[[provider]]$part2
     pagefield <- paste0("&page=", page)

@@ -1,5 +1,5 @@
 ---
-author: "Bo Werth"
+author: "The Queen"
 title: "Enalquiler"
 output: rmarkdown::html_vignette
 vignette: >
@@ -9,17 +9,21 @@ vignette: >
 ---
 
 
-```{r setup, echo=FALSE}
+```{r setup, warning=FALSE, message=FALSE, echo=FALSE}
 library(RCurl)
 library(rvest)
 library(magrittr)
 library(curl)
 library(estate)
+library(doMC)
+registerDoMC(detectCores(logical = TRUE) - 1)
+library(ggplot2)
+library(dplyr)
 
 htmldir <- "inst/extdata/enalquiler"
 ```
 
-```{r download, echo=TRUE, eval=FALSE}
+```{r download, echo=FALSE, eval=FALSE}
 ## get number of offers
 num_per_page <- 15
 baseurl <- "http://www.enalquiler.com/search?provincia=43&poblacion=46424&tipo=2"
@@ -102,10 +106,7 @@ processEnalquiler <- function(url) {
 
 ## Vectorized extraction from HTML
 
-```{r extract_combine, echo=TRUE, eval=FALSE, results='asis'}
-library(doMC)
-registerDoMC(detectCores(logical = TRUE) - 1)
-
+```{r extract_combine, echo=FALSE, eval=FALSE, results='asis'}
 combineEstate <- function(htmldir, pages=1) {
   htmlfiles <- list.files(htmldir)[1:pages]
 
@@ -121,5 +122,35 @@ combineEstate <- function(htmldir, pages=1) {
 estatedf <- combineEstate(htmldir = htmldir, pages = npages)
 knitr::kable(head(estatedf))
 ## head(estatedf)
-## write.table(estatedf, file = "enalquiler-2017-10-04.tsv", row.names = FALSE, sep = "\t")
+write.table(estatedf, file = "../inst/extdata/enalquiler-2017-10-04.tsv", row.names = FALSE, sep = "\t")
+## saveRDS(estatedf, file = "inst/extdata/enalquiler.rds")
+## save(estatedf, file = "inst/extdata/enalquiler.rda")
+```
+
+```{r plot}
+estatedf <- read.table(file = "/home/xps13/src/R/estate/inst/extdata/enalquiler-2017-10-04.tsv", header = TRUE, sep = "\t")
+
+data_plot <-
+  estatedf %>%
+  filter(price < 1000 &
+         bath < 3)
+
+ggplot(data = data_plot,  aes(x = price, y = size, color = factor(bath))) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggtitle("size: m^2, price: euro") +
+
+  theme(
+    legend.position = "top"
+  )
+```
+
+```{r model}
+str(estatedf)
+mod1 <- lm(price ~ size * bath, data = data_plot)
+summary(mod1)
+```
+
+```{r table, results='asis'}
+knitr::kable(head(estatedf))
 ```

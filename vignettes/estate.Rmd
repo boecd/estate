@@ -71,10 +71,11 @@ htmldir <- system.file("extdata", type, package = "estate")
 npages <- 50
 ```
 
-```{r downloadHtml, eval=TRUE, echo=TRUE}
+```{r downloadHtml, eval=FALSE, echo=TRUE}
 ## set eval=TRUE to activate download
 ## htmldir_temp <- file.path("../inst/extdata", type)
-htmldir_temp <- file.path("../../inst/extdata", type) # run from /docs/articles folder
+## setwd("vignettes")
+htmldir_temp <- file.path("../inst/extdata", type) # run from /docs/articles folder
 unlink(file.path(htmldir_temp, list.files(htmldir_temp)))
 downloadHtml(type = type, pages = c(1:npages), htmldir = htmldir_temp)
 devtools::install() # reads data from install dir
